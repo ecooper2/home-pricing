@@ -9,13 +9,14 @@ import numpy as np
 from pandas.stats.api import ols
 
 def GetHardCodedParameters():
-	D = {'path_to_neighborhoods' : os.path.join("2015_0111_chicago_extraction"),
+	D = {'path_to_neighborhoods' : os.path.join("NeighborhoodFiles"),
 		'rooms_with_areas' : ['Mast Br Sz', '2nd Bdr Sz', '3rd Bdr Sz', '4th Bdr Sz', 'Addtl Rm 1 Sz', 
 		'Addtl Rm 2 Sz', 'Addtl Rm 3 Sz', 'Addtl Rm 4 Sz', 'Addtl Rm 5 Sz', 'Din Sz', 'Fam Rm Sz',
 		'Kit Sz', 'Liv Rm Sz'],
 		'Data_Gathered_Year' : 2014,
-		'MinExamples' : 10,
-		'AgeRanges' : [(0,10),(11,50),(51,90),(91,999)]
+		'MinExamples' : 15,
+		'AgeRanges' : [(0,10),(11,50),(51,90),(91,199)],
+		'MinPricePerSqft' : 75 #To eliminate the bizarre cases where a 5500ft^2 property is listed for <300K
 		}
 	return D
 
@@ -73,9 +74,9 @@ def ClassifyPropertyType(property_data):
 		elif 'Townhouse' in property_type or 'Duplex' in property_type:
 			NewTypes.append('Townhouse')
 		elif 'High' in property_type:
-			NewTypes.append('HighRise')
+			NewTypes.append('Condo')
 		elif 'Mid' in property_type or 'Low' in property_type:
-			NewTypes.append('LowRise')
+			NewTypes.append('Condo')
 		elif 'Stories' in property_type and len(property_type) < 12:
 			NewTypes.append('Detached')
 		elif 'Condo' in property_type or 'Studio' in property_type:
@@ -95,9 +96,18 @@ def Cluster_and_add_Columns(D, property_data, file_name):
 		property_data = ClassifyAge(D, property_data)
 	if 'GroupType' not in property_data.columns:
 		property_data = ClassifyPropertyType(property_data)
+	if 'PricePerSQFT_no_intercept' not in property_data.columns:
+		property_data = AddPricePerSQFT_no_intercept(property_data)
 	property_data = AddNeighborhood(property_data, file_name)
 	return property_data
-
+	
+def AddPricePerSQFT_no_intercept(property_data):
+	prices_per_sqft_no_intercept = []
+	for ASF, list_price in zip(property_data.ASF, property_data['List Price']):
+		prices_per_sqft_no_intercept.append(list_price / max(ASF,1))
+	property_data['PricePerSQFT_no_intercept'] = prices_per_sqft_no_intercept
+	return property_data
+	
 def AddNeighborhood(property_data, file_name):
 	neighborhood = file_name.split(' - ')[0]  
 	property_data['Neighborhood'] = [neighborhood for i in range(len(property_data))]
@@ -136,14 +146,39 @@ def BuildAllPropertyData(path_to_directory):
 			all_property_data = Cluster_and_add_Columns(D, property_data, file_name)
 		else:
 			all_property_data = all_property_data.append(Cluster_and_add_Columns(D, property_data, file_name))
-	return all_property_data
+		all_property_data = all_property_data[all_property_data.PricePerSQFT_no_intercept > D['MinPricePerSqft']]
+	return all_property_data[np.logical_and(all_property_data.ASF > 100, all_property_data['List Price'] > 0)]
+	
+def Append_Group_Information(prices_per_sqft, neighborhood, min_age, max_age, group_type, intercept, slope, r, n):
+	prices_per_sqft['neighborhood'].append(neighborhood)
+	prices_per_sqft['min_age'].append(min_age)
+	prices_per_sqft['max_age'].append(max_age)
+	prices_per_sqft['group_type'].append(group_type)
+	prices_per_sqft['price_per_sqft'].append(slope)
+	prices_per_sqft['fixed_cost'].append(intercept)	
+	prices_per_sqft['correlation'].append(r)	
+	prices_per_sqft['count'].append(n)
+	return prices_per_sqft
 	
 def main():
 	D = GetHardCodedParameters()
 	path_to_directory = D['path_to_neighborhoods']
 	all_property_data = BuildAllPropertyData(path_to_directory)
 	group_types = unique(all_property_data.GroupType)	
-		
+	neighborhoods = unique(all_property_data.Neighborhood)
+	prices_per_sqft = {'neighborhood' : [], 'min_age' : [], 'max_age' : [], 'group_type' : [],
+						'price_per_sqft' : [], 'fixed_cost' : [], 'correlation' : [], 'count' : []}
+	for neighborhood in neighborhoods:
+		for age_range in D['AgeRanges']:
+			min_age, max_age = age_range
+			for group_type in group_types:
+				sub_property_data = GetSimilarAge_and_Group(all_property_data, neighborhood, min_age, max_age, group_type)
+				if len(sub_property_data) >= D['MinExamples'] and group_type != "UNKNOWN":
+					intercept, slope, r = GetCostPerSQFT_and_intercept(sub_property_data)
+					prices_per_sqft = Append_Group_Information(prices_per_sqft, neighborhood, min_age, max_age, group_type,
+															intercept, slope, r, len(sub_property_data))
+	all_neighborhoods = pd.DataFrame(prices_per_sqft)			
+	all_neighborhoods.to_csv('rough_neighborhood_pricing.csv')
 	return None
 	
 if __name__ == "__main__"
