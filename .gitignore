@@ -38,5 +38,8 @@ config.json
 .project
 .pydevproject
 
+# OS X
+.DS_Store
+
 # Various data files
 NeighborhoodFiles/
