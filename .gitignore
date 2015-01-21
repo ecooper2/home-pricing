@@ -42,4 +42,5 @@ config.json
 .DS_Store
 
 # Various data files
-NeighborhoodFiles/
+input/
+output/
