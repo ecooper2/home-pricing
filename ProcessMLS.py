@@ -9,7 +9,7 @@ import numpy as np
 from pandas.stats.api import ols
 
 def GetHardCodedParameters():
-    D = {'path_to_neighborhoods' : os.path.join("NeighborhoodFiles"),
+    D = {'path_to_neighborhoods' : os.path.join("input/NeighborhoodFiles"),
         'rooms_with_areas' : ['Mast Br Sz', '2nd Bdr Sz', '3rd Bdr Sz', '4th Bdr Sz', 'Addtl Rm 1 Sz',
         'Addtl Rm 2 Sz', 'Addtl Rm 3 Sz', 'Addtl Rm 4 Sz', 'Addtl Rm 5 Sz', 'Din Sz', 'Fam Rm Sz',
         'Kit Sz', 'Liv Rm Sz'],
@@ -178,7 +178,10 @@ def main():
                     prices_per_sqft = Append_Group_Information(prices_per_sqft, neighborhood, min_age, max_age, group_type,
                                                             intercept, slope, r, len(sub_property_data))
     all_neighborhoods = pd.DataFrame(prices_per_sqft)
-    all_neighborhoods.to_csv('rough_neighborhood_pricing.csv')
+
+    if not os.path.exists('output'):
+      os.makedirs('output')
+    all_neighborhoods.to_csv('output/rough_neighborhood_pricing.csv')
     return None
 
 if __name__ == "__main__":
