@@ -137,7 +137,7 @@ def GetCostPerSQFT_and_intercept(sub_property_data):
 	#return the intercept, the x-coefficient (cost per additional sqft), correlation coefficient
 	return int(res.beta.intercept), round(res.beta.x,2), round(math.sqrt(res.r2),3)
 
-def BuildAllPropertyData(path_to_directory):
+def BuildAllPropertyData(D, path_to_directory):
 	all_MLS_files = GetAllFilesInDirectory(path_to_directory)	
 	for i, file_name in enumerate(all_MLS_files):
 		print("Processing", file_name)
@@ -163,7 +163,7 @@ def Append_Group_Information(prices_per_sqft, neighborhood, min_age, max_age, gr
 def main():
 	D = GetHardCodedParameters()
 	path_to_directory = D['path_to_neighborhoods']
-	all_property_data = BuildAllPropertyData(path_to_directory)
+	all_property_data = BuildAllPropertyData(D, path_to_directory)
 	group_types = unique(all_property_data.GroupType)	
 	neighborhoods = unique(all_property_data.Neighborhood)
 	prices_per_sqft = {'neighborhood' : [], 'min_age' : [], 'max_age' : [], 'group_type' : [],
@@ -181,6 +181,6 @@ def main():
 	all_neighborhoods.to_csv('rough_neighborhood_pricing.csv')
 	return None
 	
-if __name__ == "__main__"
+if __name__ == "__main__":
 	null = sys.argv
 	main()
