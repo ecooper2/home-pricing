@@ -5,6 +5,7 @@ from lxml.html.soupparser import fromstring
 import prettify
 import numbers
 import htmltext
+import pandas as pd
 
 from bs4 import BeautifulSoup
 # from selenium import webdriver
@@ -111,7 +112,7 @@ def parseZillowDetails(df):
     df['prices'] = df['prices'].str.replace(r'\D', '')
 
     #split beds column into beds, bath and sq_feet
-    df['beds'], df['baths'], df['sq_feet'] = zip(*all_homes_df.beds.apply(getBedsBathsSqFt))
+    df['beds'], df['baths'], df['sq_feet'] = zip(*df.beds.apply(getBedsBathsSqFt))
 
     #remove commas from sq_feet and convert to float
     df.replace(',','', regex=True, inplace=True)
