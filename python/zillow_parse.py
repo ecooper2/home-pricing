@@ -50,7 +50,7 @@ def gatherZillowDetails(all_homes_df, soup):
         link = soup.find_all (class_= 'list-card-link')
 
         #create dataframe columns out of variables
-        df['prices'] = price
+        df['price'] = price
         df['address'] = address
         df['beds'] = beds
 
@@ -100,16 +100,16 @@ def getBedsBathsSqFt(html_str):
 def parseZillowDetails(df):
 
     #convert columns to str
-    df['prices'] = df['prices'].astype('str')
+    df['price'] = df['price'].astype('str')
     df['address'] = df['address'].astype('str')
     df['beds'] = df['beds'].astype('str')
     
     #remove html tags
-    df['prices'] = df['prices'].replace('<div class="list-card-price">', ' ', regex=True)
+    df['price'] = df['price'].replace('<div class="list-card-price">', ' ', regex=True)
     df['address'] = df['address'].replace('<address class="list-card-addr">', ' ', regex=True)
-    df['prices'] = df['prices'].replace('</div>', ' ', regex=True)
+    df['price'] = df['price'].replace('</div>', ' ', regex=True)
     df['address'] = df['address'].replace('</address>', ' ', regex=True)
-    df['prices'] = df['prices'].str.replace(r'\D', '')
+    df['price'] = df['price'].str.replace(r'\D', '')
 
     #split beds column into beds, bath and sq_feet
     df['beds'], df['baths'], df['sq_feet'] = zip(*df.beds.apply(getBedsBathsSqFt))
@@ -118,14 +118,14 @@ def parseZillowDetails(df):
     df.replace(',','', regex=True, inplace=True)
 
     #drop nulls
-    df = df[(df['prices'] != '') & (df['prices']!= ' ')]
+    df = df[(df['price'] != '') & (df['price']!= ' ')]
 
     #convert column to float
-    df['prices'] = df['prices'].astype('float')
+    df['price'] = df['price'].astype('int')
 
     #remove spaces from link column
     df['links'] = df.links.str.replace(' ','')
 
     #rearrange the columns
-    df = df[['prices', 'address', 'links', 'beds', 'baths', 'sq_feet']]
+    df = df[['price', 'address', 'links', 'beds', 'baths', 'sq_feet']]
     return df
