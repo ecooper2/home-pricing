@@ -1,5 +1,5 @@
 beautifulsoup4==4.3.2
-numpy==1.9.1
+numpy==1.21.0
 pandas==0.15.2
 patsy==0.3.0
 python-dateutil==2.4.0
